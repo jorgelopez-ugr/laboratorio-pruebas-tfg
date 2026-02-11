@@ -46,6 +46,11 @@ public:
     void drawFlat();
     void drawSmooth();
     
+    // NUEVOS MÉTODOS OPTIMIZADOS (sin iluminación)
+    void drawPoints();      // Visualización como nube de puntos
+    void drawWireframe();   // Visualización como malla de aristas
+    void drawSolid();       // Visualización sólida sin iluminación
+    
     // MÉTODOS DE CÁLCULO
     void calcTodasNormalesCara();
     void calcTodasNormalesVert();
@@ -55,7 +60,10 @@ public:
     // ancho y alto: número de puntos en la rejilla
     // escala: separación entre puntos
     // datosAltura: vector plano con los valores Z
-    void generarDesdeDEM(int ancho, int alto, float escala, const std::vector<float>& datosAltura);
+    // calcularNormales: true para calcular normales (lento), false para omitir (rápido)
+    void generarDesdeDEM(int ancho, int alto, float escala, 
+                         const std::vector<float>& datosAltura, 
+                         bool calcularNormales = true);
     
     // Mantenemos esto por compatibilidad, pero no lo usaremos
     void cargaPLY(char *rutaArchivo); 

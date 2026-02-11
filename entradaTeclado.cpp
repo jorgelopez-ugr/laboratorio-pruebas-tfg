@@ -26,6 +26,9 @@ modulo entradaTeclado.c
 #include <GL/glut.h>		// Libreria de utilidades de OpenGL
 #include "lab.hh"
 
+// Variable externa del modo de visualización
+extern int modoVisualizacion;
+
 
 /** 
 
@@ -44,6 +47,9 @@ void printHelp ()
   printf ("PgUp, PgDn: avanza y retrocede la cámara \n\n");
   printf ("+,-: avanza y retrocede la cámara \n\n");
   printf ("Teclas de movimiento de cursor: giran la camara\n");
+  printf ("P: Modo PUNTOS\n");
+  printf ("W: Modo WIREFRAME (aristas)\n");
+  printf ("S: Modo SOLIDO\n");
   // Anyade la informacion de las opciones que introduzcas aqui !!       
 
   printf ("\n Escape: Salir");
@@ -103,6 +109,23 @@ void letra (unsigned char k, int x, int y)
     case '3':
       glPointSize(3.0f);
       glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
+      break;
+    
+    // NUEVOS MODOS DE VISUALIZACIÓN DEM
+    case 'p':
+    case 'P':
+      modoVisualizacion = 0; // PUNTOS
+      printf("Modo: PUNTOS\n");
+      break;
+    case 'w':
+    case 'W':
+      modoVisualizacion = 1; // WIREFRAME
+      printf("Modo: WIREFRAME\n");
+      break;
+    case 's':
+    case 'S':
+      modoVisualizacion = 2; // SÓLIDO
+      printf("Modo: SOLIDO\n");
       break;
       
     default:

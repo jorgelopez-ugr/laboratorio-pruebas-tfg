@@ -38,7 +38,7 @@ LIBSDIR= /usr/X11R6/lib
 #             -c   (solo compilar cada modulo, no linkar)
 #             -I   (indicamos directiorios donde buscar los include)
 
-CFLAGS=  -g -c -DXWINDOWS  -I$(INCLUDEDIR) 
+CFLAGS=  -g -c -DXWINDOWS  -I$(INCLUDEDIR) $(shell gdal-config --cflags) 
 
        
 #  LDFLAGS= Parametros para el linkador. (ld)
@@ -56,7 +56,7 @@ LDFLAGS=   -L$(LIBSDIR)
 #              m        funciones matematicas (sin y cos, p.ej.)
 
 #LIBS=    -lglut -lGLU -lGL -lX11 -lXext -lXmu -lXi -lc -lm
-LIBS=    -lglut -lGLU -lGL -lX11 -lXext  -lc -lm
+LIBS=    -lglut -lGLU -lGL -lX11 -lXext  -lc -lm $(shell gdal-config --libs)
 
 #  CC= orden de UNIX que invoca al compilador de C
 #      (en este caso "gcc" llama al compilador de C/C++ de GNU) 

@@ -14,12 +14,16 @@ Vertice Cara::getVertice(int ident){
 // --- Lógica del Mesh ---
 
 // ESTA ES LA FUNCIÓN CLAVE PARA TU LABORATORIO
-void Mesh::generarDesdeDEM(int ancho, int alto, float escala, const std::vector<float>& datosAltura) {
+void Mesh::generarDesdeDEM(int ancho, int alto, float escala, 
+                           const std::vector<float>& datosAltura,
+                           bool calcularNormales) {
     vectVertices.clear();
     vectCaras.clear();
     normalCaras.clear();
     normalVertices.clear();
 
+    std::cout << "  [1/3] Generando vértices..." << std::endl;
+    
     // 1. Generar Vértices
     // Centramos la malla en (0,0,0) para que la cámara gire bien alrededor
     float offsetX = (ancho - 1) * escala / 2.0f;
@@ -38,6 +42,8 @@ void Mesh::generarDesdeDEM(int ancho, int alto, float escala, const std::vector<
         }
     }
 
+    std::cout << "  [2/3] Generando triángulos..." << std::endl;
+    
     // 2. Generar Índices (Triángulos)
     // Conectamos cada punto con sus vecinos para formar quads y luego triángulos
     for (int i = 0; i < alto - 1; ++i) {
@@ -59,12 +65,66 @@ void Mesh::generarDesdeDEM(int ancho, int alto, float escala, const std::vector<
         }
     }
 
-    // 3. Calcular Iluminación (Normales)
-    // Reutilizamos tu código existente, que es correcto
-    calcTodasNormalesCara();
-    calcTodasNormalesVert();
+    // 3. Calcular Iluminación (Normales) - OPCIONAL para rendimiento
+    if (calcularNormales) {
+        std::cout << "  [3/3] Calculando normales (esto puede tardar)..." << std::endl;
+        calcTodasNormalesCara();
+        calcTodasNormalesVert();
+    } else {
+        std::cout << "  [3/3] Omitiendo cálculo de normales (modo optimizado)" << std::endl;
+    }
     
-    std::cout << "DEM Generado: " << vectVertices.size()/3 << " vertices y " << vectCaras.size()/3 << " triangulos." << std::endl;
+    std::cout << "\n  ✓ DEM Generado: " << vectVertices.size()/3 << " vértices y " 
+              << vectCaras.size()/3 << " triángulos." << std::endl;
+}
+
+// --- NUEVOS MÉTODOS DE VISUALIZACIÓN OPTIMIZADOS ---
+
+void Mesh::drawPoints() {
+    // Visualizar como nube de puntos (MUY RÁPIDO)
+    glPointSize(2.0f); // Tamaño de los puntos
+    glBegin(GL_POINTS);
+    for (size_t i = 0; i < vectVertices.size(); i += 3) {
+        glVertex3f(vectVertices[i], vectVertices[i+1], vectVertices[i+2]);
+    }
+    glEnd();
+}
+
+void Mesh::drawWireframe() {
+    // Visualizar solo las aristas (RÁPIDO)
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    glBegin(GL_TRIANGLES);
+    for (size_t i = 0; i < vectCaras.size(); i += 3) {
+        if (i+2 >= vectCaras.size()) break;
+        
+        int idVert1 = vectCaras[i]   * 3;
+        int idVert2 = vectCaras[i+1] * 3;
+        int idVert3 = vectCaras[i+2] * 3;
+
+        glVertex3f(vectVertices[idVert1], vectVertices[idVert1+1], vectVertices[idVert1+2]);
+        glVertex3f(vectVertices[idVert2], vectVertices[idVert2+1], vectVertices[idVert2+2]);
+        glVertex3f(vectVertices[idVert3], vectVertices[idVert3+1], vectVertices[idVert3+2]);
+    }
+    glEnd();
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // Restaurar modo normal
+}
+
+void Mesh::drawSolid() {
+    // Visualizar sólido sin iluminación (MODERADAMENTE RÁPIDO)
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    glBegin(GL_TRIANGLES);
+    for (size_t i = 0; i < vectCaras.size(); i += 3) {
+        if (i+2 >= vectCaras.size()) break;
+        
+        int idVert1 = vectCaras[i]   * 3;
+        int idVert2 = vectCaras[i+1] * 3;
+        int idVert3 = vectCaras[i+2] * 3;
+
+        glVertex3f(vectVertices[idVert1], vectVertices[idVert1+1], vectVertices[idVert1+2]);
+        glVertex3f(vectVertices[idVert2], vectVertices[idVert2+1], vectVertices[idVert2+2]);
+        glVertex3f(vectVertices[idVert3], vectVertices[idVert3+1], vectVertices[idVert3+2]);
+    }
+    glEnd();
 }
 
 // --- Mantenemos tu código de dibujo existente ---
