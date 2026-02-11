@@ -84,6 +84,8 @@ glutPostRedisplay();
 
 Procedimiento para gestionar los eventos de movimiento del raton.
 
+NUEVA IMPLEMENTACIÓN: Controla la rotación de la cámara libre
+
 Argumentos:
 
 x,y: Posicion, en coordenadas de pantalla, en que se encuantra el cursor.
@@ -92,27 +94,32 @@ x,y: Posicion, en coordenadas de pantalla, en que se encuantra el cursor.
 
 void RatonMovido( int x, int y )
 {
-char texto[30];
-float ax,ay,az,d;
-getCamara (ax, ay, az, d);
-	if(MOUSE_LEFT_DOWN) {
-		if(x!=MOUSE_X) ay+=x-MOUSE_X;
-		if(y!=MOUSE_Y) ax+=y-MOUSE_Y;
-		setCamara (ax, ay, az,  d);
-		}
-	else if(MOUSE_RIGHT_DOWN) {
-	//   if(x!=MOUSE_X) z_camara=10.0*(anchoVentana/2-MOUSE_X)/(x+1.0);
-	if(y!=MOUSE_Y) {
-		d+=100.0*(y-MOUSE_Y)/200; //escalar el zoom
-		setCamara (ax,  ay,  az,  d);
-		}
-	 }
-	else if(MOUSE_MIDDLE_DOWN) {
-		if(x!=MOUSE_X) az+=x-MOUSE_X;
-		if(y!=MOUSE_Y) ax+=y-MOUSE_Y;
-		setCamara ( ax,  ay,  az,  d);
-		}
-	MOUSE_X=x;
-	MOUSE_Y=y;
-glutPostRedisplay();
+    // Sensibilidad del ratón
+    float sensitivity = 0.2f;
+    
+    if(MOUSE_LEFT_DOWN) {
+        // Calcular el desplazamiento del ratón
+        int deltaX = x - MOUSE_X;
+        int deltaY = y - MOUSE_Y;
+        
+        // Rotar la cámara
+        rotarCamara(deltaX * sensitivity, -deltaY * sensitivity);
+    }
+    else if(MOUSE_RIGHT_DOWN) {
+        // Zoom = mover adelante/atrás
+        int deltaY = y - MOUSE_Y;
+        moverCamaraAdelante(-deltaY * 0.5f);
+    }
+    else if(MOUSE_MIDDLE_DOWN) {
+        // Botón central = mover lateral y vertical
+        int deltaX = x - MOUSE_X;
+        int deltaY = y - MOUSE_Y;
+        
+        moverCamaraLateral(-deltaX * 0.5f);
+        moverCamaraVertical(deltaY * 0.5f);
+    }
+    
+    MOUSE_X = x;
+    MOUSE_Y = y;
+    glutPostRedisplay();
 }

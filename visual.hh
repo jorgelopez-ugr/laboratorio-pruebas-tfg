@@ -24,6 +24,27 @@
 
 //======================== visual.c
 
+// ====== CÁMARA LIBRE ======
+
+/** Actualiza el vector de dirección de la cámara basado en los ángulos **/
+void actualizarDireccionCamara();
+
+/** Mueve la cámara adelante/atrás en la dirección que mira **/
+void moverCamaraAdelante(float distancia);
+
+/** Mueve la cámara lateralmente (strafe) **/
+void moverCamaraLateral(float distancia);
+
+/** Mueve la cámara verticalmente (arriba/abajo) **/
+void moverCamaraVertical(float distancia);
+
+/** Rota la cámara (cambiar hacia dónde mira) **/
+void rotarCamara(float deltaYaw, float deltaPitch);
+
+/** Resetea la cámara a la posición inicial **/
+void resetearCamara();
+
+// ====== FUNCIONES ANTIGUAS (compatibilidad) ======
 
 /** 	void setCamara()
 

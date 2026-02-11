@@ -14,6 +14,9 @@ Mesh mallaDEM;
 // Variable global para modo de visualización
 int modoVisualizacion = 2; // 0=puntos, 1=wireframe, 2=sólido
 
+// Variable global para iluminación
+bool iluminacionActiva = false; // Empieza desactivada para mejor rendimiento
+
 // Función para leer archivo GeoTIFF con datos DEM
 bool leerDEMdesdeTIFF(const char* nombreArchivo, int& ancho, int& alto, 
                        float& escala, std::vector<float>& alturas, int submuestreo = 1) {
@@ -180,8 +183,40 @@ void Dibuja(void) {
     
     transformacionVisualizacion(); // Cámara
 
-    // Color sólido simple (sin iluminación)
-    glColor3f(0.3, 0.7, 0.4); // Verde terreno
+    // Configurar iluminación si está activa
+    if (iluminacionActiva) {
+        glEnable(GL_LIGHTING);
+        glEnable(GL_LIGHT0);
+        
+        // Luz direccional desde arriba y diagonal (simula el sol)
+        GLfloat luz_posicion[] = {1.0f, 2.0f, 1.0f, 0.0f}; // 0.0 = direccional
+        GLfloat luz_ambiente[] = {0.3f, 0.3f, 0.3f, 1.0f};  // Luz ambiente suave
+        GLfloat luz_difusa[] = {0.8f, 0.8f, 0.7f, 1.0f};    // Luz principal cálida
+        GLfloat luz_especular[] = {0.5f, 0.5f, 0.5f, 1.0f}; // Brillos suaves
+        
+        glLightfv(GL_LIGHT0, GL_POSITION, luz_posicion);
+        glLightfv(GL_LIGHT0, GL_AMBIENT, luz_ambiente);
+        glLightfv(GL_LIGHT0, GL_DIFFUSE, luz_difusa);
+        glLightfv(GL_LIGHT0, GL_SPECULAR, luz_especular);
+        
+        // Material del terreno
+        GLfloat mat_ambiente[] = {0.3f, 0.35f, 0.25f, 1.0f};  // Verde oscuro
+        GLfloat mat_difuso[] = {0.4f, 0.6f, 0.3f, 1.0f};      // Verde terreno
+        GLfloat mat_especular[] = {0.2f, 0.2f, 0.2f, 1.0f};   // Poco brillo
+        GLfloat mat_shininess = 10.0f;                         // Superficie mate
+        
+        glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, mat_ambiente);
+        glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mat_difuso);
+        glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, mat_especular);
+        glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, mat_shininess);
+        
+        glEnable(GL_COLOR_MATERIAL); // Permitir que glColor afecte al material
+        glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+    } else {
+        glDisable(GL_LIGHTING);
+        // Color sólido simple (sin iluminación)
+        glColor3f(0.3, 0.7, 0.4); // Verde terreno
+    }
 
     // Dibujar DEM según modo de visualización
     switch(modoVisualizacion) {
@@ -192,7 +227,11 @@ void Dibuja(void) {
             mallaDEM.drawWireframe();
             break;
         case 2: // SÓLIDO
-            mallaDEM.drawSolid();
+            if (iluminacionActiva) {
+                mallaDEM.drawSmoothLit(); // Con normales para iluminación
+            } else {
+                mallaDEM.drawSolid(); // Sin normales, más rápido
+            }
             break;
     }
 
@@ -237,7 +276,8 @@ int main(int argc, char *argv[]) {
         
         if (leerDEMdesdeTIFF(argv[1], ancho, alto, escala, alturas, submuestreo)) {
             std::cout << "\nGenerando malla 3D..." << std::endl;
-            mallaDEM.generarDesdeDEM(ancho, alto, escala, alturas, false); // false = sin normales
+            // SIEMPRE calculamos normales ahora, pero solo se usan si activas iluminación
+            mallaDEM.generarDesdeDEM(ancho, alto, escala, alturas, true); // true = calcular normales
             std::cout << "¡Malla generada exitosamente!" << std::endl;
         } else {
             std::cerr << "Error al cargar el archivo DEM. Usando datos sintéticos." << std::endl;
@@ -259,22 +299,36 @@ int main(int argc, char *argv[]) {
     glutTimerFunc(30, idle, 0);
 
     glEnable(GL_DEPTH_TEST);
-    // NO habilitamos iluminación para mejor rendimiento
-    // glEnable(GL_LIGHTING);
-    // glEnable(GL_LIGHT0);
+    glEnable(GL_NORMALIZE); // Normalizar automáticamente las normales
+    glShadeModel(GL_SMOOTH); // Sombreado suave
+    // La iluminación se activa/desactiva con la tecla L
 
-    std::cout << "\n======================================" << std::endl;
-    std::cout << "CONTROLES:" << std::endl;
-    std::cout << "======================================" << std::endl;
-    std::cout << "  Ratón Izq: Rotar" << std::endl;
-    std::cout << "  Ratón Der: Zoom (arriba/abajo)" << std::endl;
-    std::cout << "  P: Modo PUNTOS" << std::endl;
-    std::cout << "  W: Modo WIREFRAME (aristas)" << std::endl;
-    std::cout << "  S: Modo SÓLIDO" << std::endl;
-    std::cout << "  +/-: Zoom" << std::endl;
-    std::cout << "  H: Ayuda" << std::endl;
-    std::cout << "  ESC: Salir" << std::endl;
-    std::cout << "======================================\n" << std::endl;
+    std::cout << "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" << std::endl;
+    std::cout << "       🎮 CONTROLES DE CÁMARA LIBRE 🎮" << std::endl;
+    std::cout << "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" << std::endl;
+    std::cout << "\n📹 MOVIMIENTO:" << std::endl;
+    std::cout << "  w/s         = Adelante / Atrás" << std::endl;
+    std::cout << "  a/d         = Izquierda / Derecha" << std::endl;
+    std::cout << "  q/e         = Subir / Bajar" << std::endl;
+    std::cout << "  Flechas     = Mover (alternativo)" << std::endl;
+    std::cout << "  PgUp/PgDn   = Subir/Bajar (alternativo)" << std::endl;
+    std::cout << "\n🖱️  RATÓN:" << std::endl;
+    std::cout << "  Botón Izq + Arrastrar   = Mirar alrededor" << std::endl;
+    std::cout << "  Botón Der + Arrastrar   = Zoom (adelante/atrás)" << std::endl;
+    std::cout << "  Botón Central + Arrastrar = Pan (lateral/vertical)" << std::endl;
+    std::cout << "\n⚙️  AJUSTES:" << std::endl;
+    std::cout << "  [  /  ]     = Reducir/Aumentar velocidad" << std::endl;
+    std::cout << "  r           = Resetear cámara" << std::endl;
+    std::cout << "\n🎨 VISUALIZACIÓN:" << std::endl;
+    std::cout << "  Shift+P     = Modo PUNTOS" << std::endl;
+    std::cout << "  Shift+W     = Modo WIREFRAME" << std::endl;
+    std::cout << "  Shift+S     = Modo SÓLIDO" << std::endl;
+    std::cout << "  L           = Toggle Iluminación (ver pendientes) 💡" << std::endl;
+    std::cout << "\n❓ AYUDA:" << std::endl;
+    std::cout << "  H           = Mostrar ayuda completa" << std::endl;
+    std::cout << "  ESC         = Salir" << std::endl;
+    std::cout << "\n💡 TIP: Activa la iluminación (L) para ver el relieve!" << std::endl;
+    std::cout << "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" << std::endl;
 
     glutMainLoop();
     return 0;
