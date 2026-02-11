@@ -29,6 +29,13 @@ modulo entradaTeclado.c
 // Variable externa del modo de visualización
 extern int modoVisualizacion;
 
+// Variables externas de la cámara libre
+extern float cam_speed;
+extern float cam_speed_multiplier;
+
+// Variable para controlar iluminación
+extern bool iluminacionActiva;
+
 
 /** 
 
@@ -43,13 +50,23 @@ void printHelp ()
   printf ("\n E.T.S.I. Informatica		Univ. de Granada ");
   printf ("\n");
   printf ("\n Opciones: \n\n");
+  printf ("=== CÁMARA LIBRE ===\n");
+  printf ("W/A/S/D: Mover adelante/izq/atrás/der\n");
+  printf ("Q/E: Subir/Bajar\n");
+  printf ("Ratón Izq + Arrastrar: Mirar alrededor\n");
+  printf ("Ratón Der + Arrastrar: Zoom adelante/atrás\n");
+  printf ("Ratón Central + Arrastrar: Pan lateral/vertical\n");
+  printf ("R: Resetear cámara\n");
+  printf ("[ / ]: Reducir/Aumentar velocidad de movimiento\n\n");
+  printf ("=== VISUALIZACIÓN ===\n");
+  printf ("P (Shift+p): Modo PUNTOS\n");
+  printf ("W (Shift+w): Modo WIREFRAME\n");
+  printf ("S (Shift+s): Modo SOLIDO\n");
+  printf ("L: Toggle iluminación (ver pendientes)\n");
+  printf ("1/2/3: Modos alternativos OpenGL\n\n");
+  printf ("=== GENERAL ===\n");
   printf ("h, H: Imprime informacion de ayuda \n");
-  printf ("PgUp, PgDn: avanza y retrocede la cámara \n\n");
-  printf ("+,-: avanza y retrocede la cámara \n\n");
-  printf ("Teclas de movimiento de cursor: giran la camara\n");
-  printf ("P: Modo PUNTOS\n");
-  printf ("W: Modo WIREFRAME (aristas)\n");
-  printf ("S: Modo SOLIDO\n");
+  printf ("+,-: Mover cámara adelante/atrás \n");
   // Anyade la informacion de las opciones que introduzcas aqui !!       
 
   printf ("\n Escape: Salir");
@@ -91,11 +108,49 @@ void letra (unsigned char k, int x, int y)
     case 'H':
       printHelp ();		// H y h imprimen ayuda
       break;
-    case '+':			// acerca la cámara
-      dCamara -= 5.0;
+    
+    // ====== CONTROLES DE CÁMARA LIBRE ======
+    case 'w':
+      moverCamaraAdelante(cam_speed * cam_speed_multiplier);
       break;
-    case '-':			// aleja la cámara
-      dCamara += 5.0;
+    case 's':
+      moverCamaraAdelante(-cam_speed * cam_speed_multiplier);
+      break;
+    case 'a':
+      moverCamaraLateral(-cam_speed * cam_speed_multiplier);
+      break;
+    case 'd':
+      moverCamaraLateral(cam_speed * cam_speed_multiplier);
+      break;
+    case 'q':
+      moverCamaraVertical(cam_speed * cam_speed_multiplier); // Subir
+      break;
+    case 'e':
+      moverCamaraVertical(-cam_speed * cam_speed_multiplier); // Bajar
+      break;
+    case 'r':
+      resetearCamara();
+      printf("Cámara reseteada\n");
+      break;
+      
+    // Ajustar velocidad
+    case '[':
+      cam_speed *= 0.5f;
+      if (cam_speed < 0.1f) cam_speed = 0.1f;
+      printf("Velocidad: %.1f\n", cam_speed);
+      break;
+    case ']':
+      cam_speed *= 2.0f;
+      if (cam_speed > 100.0f) cam_speed = 100.0f;
+      printf("Velocidad: %.1f\n", cam_speed);
+      break;
+      
+    // ====== CONTROLES ANTIGUOS ======
+    case '+':			// acerca la cámara (antigua)
+      moverCamaraAdelante(5.0f);
+      break;
+    case '-':			// aleja la cámara (antigua)
+      moverCamaraAdelante(-5.0f);
       break;
     case 27:			// Escape  Terminar
       exit (0);
@@ -111,77 +166,70 @@ void letra (unsigned char k, int x, int y)
       glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
       break;
     
-    // NUEVOS MODOS DE VISUALIZACIÓN DEM
-    case 'p':
+    // MODOS DE VISUALIZACIÓN DEM (usar mayúsculas)
     case 'P':
       modoVisualizacion = 0; // PUNTOS
       printf("Modo: PUNTOS\n");
       break;
-    case 'w':
     case 'W':
       modoVisualizacion = 1; // WIREFRAME
       printf("Modo: WIREFRAME\n");
       break;
-    case 's':
     case 'S':
       modoVisualizacion = 2; // SÓLIDO
       printf("Modo: SOLIDO\n");
+      break;
+    
+    // Toggle iluminación para ver pendientes
+    case 'l':
+    case 'L':
+      iluminacionActiva = !iluminacionActiva;
+      if (iluminacionActiva) {
+        printf("Iluminación: ACTIVADA (ver pendientes)\n");
+      } else {
+        printf("Iluminación: DESACTIVADA (color plano)\n");
+      }
       break;
       
     default:
       return;
     }
-  setCamara (rotxCamara, rotyCamara, 0.0, dCamara);
-  glutPostRedisplay ();		// Algunas de las opciones cambian paramentros
-}				// de la camara. Es necesario actualziar la imagen
+  glutPostRedisplay ();		// Actualizar la imagen
+}
 
 /**		void especial(int k, int x, int y)
 Este procedimiento es llamado por el sistema cuando se pulsa una tecla
 especial. El codigo k esta definido en glut mediante constantes
 
-Parametros de entrada:
-
-k: codigo del caracter pulsado (definido en glut mediante constantes).
-
-x:
-
-y:
+ACTUALIZADO: Ahora mueve la cámara libre
 
 **/
 void especial (int k, int x, int y)
 {
-
+  float speed = cam_speed * cam_speed_multiplier;
+  
   switch (k)
     {
     case GLUT_KEY_UP:
-      rotxCamara += 5.0;	// Cursor arriba + rotacion x
-      if (rotxCamara > 360)
-	rotxCamara -= 360;
+      moverCamaraAdelante(speed);
       break;
     case GLUT_KEY_DOWN:
-      rotxCamara -= 5.0;
-      if (rotxCamara < 0)
-	rotxCamara += 360;
+      moverCamaraAdelante(-speed);
       break;
     case GLUT_KEY_LEFT:
-      rotyCamara += 5.0;
-      if (rotyCamara > 360)
-	rotyCamara -= 360;
+      moverCamaraLateral(-speed);
       break;
     case GLUT_KEY_RIGHT:
-      rotyCamara -= 5.0;
-      if (rotyCamara < 0)
-	rotyCamara += 360;
+      moverCamaraLateral(speed);
       break;
-    case GLUT_KEY_PAGE_DOWN:	// acerca la cámara
-      dCamara -= 5.0;
+    case GLUT_KEY_PAGE_UP:
+      moverCamaraVertical(speed);
       break;
-    case GLUT_KEY_PAGE_UP:	// aleja la cámara
-      dCamara += 5.0;
+    case GLUT_KEY_PAGE_DOWN:
+      moverCamaraVertical(-speed);
       break;
     default:
       return;
     }
-  setCamara (rotxCamara, rotyCamara, 0.0, dCamara);
-  glutPostRedisplay ();		// Actualiza la imagen (ver proc. letra)
+  glutPostRedisplay ();		// Actualiza la imagen
 }

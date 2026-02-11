@@ -50,6 +50,7 @@ public:
     void drawPoints();      // Visualización como nube de puntos
     void drawWireframe();   // Visualización como malla de aristas
     void drawSolid();       // Visualización sólida sin iluminación
+    void drawSmoothLit();   // Visualización sólida CON iluminación y normales
     
     // MÉTODOS DE CÁLCULO
     void calcTodasNormalesCara();

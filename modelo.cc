@@ -127,6 +127,37 @@ void Mesh::drawSolid() {
     glEnd();
 }
 
+void Mesh::drawSmoothLit() {
+    // Visualizar con iluminación suave usando normales por vértice
+    // Esto permite ver el relieve y las pendientes del terreno
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    glBegin(GL_TRIANGLES);
+    for (size_t i = 0; i < vectCaras.size(); i += 3) {
+        if (i+2 >= vectCaras.size()) break;
+        
+        int idVert1 = vectCaras[i]   * 3;
+        int idVert2 = vectCaras[i+1] * 3;
+        int idVert3 = vectCaras[i+2] * 3;
+        
+        // Especificar normal por vértice para sombreado suave
+        if (!normalVertices.empty()) {
+            glNormal3f(normalVertices[idVert1], normalVertices[idVert1+1], normalVertices[idVert1+2]);
+        }
+        glVertex3f(vectVertices[idVert1], vectVertices[idVert1+1], vectVertices[idVert1+2]);
+        
+        if (!normalVertices.empty()) {
+            glNormal3f(normalVertices[idVert2], normalVertices[idVert2+1], normalVertices[idVert2+2]);
+        }
+        glVertex3f(vectVertices[idVert2], vectVertices[idVert2+1], vectVertices[idVert2+2]);
+        
+        if (!normalVertices.empty()) {
+            glNormal3f(normalVertices[idVert3], normalVertices[idVert3+1], normalVertices[idVert3+2]);
+        }
+        glVertex3f(vectVertices[idVert3], vectVertices[idVert3+1], vectVertices[idVert3+2]);
+    }
+    glEnd();
+}
+
 // --- Mantenemos tu código de dibujo existente ---
 
 void Mesh::drawFlat(){
